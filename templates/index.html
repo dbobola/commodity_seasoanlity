@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gold (USD) Seasonality Chart</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="index.css">
+    <style>
+        /* ================================================= */
+        /* General styles */
+        /* ================================================= */
+        html {
+            font-size: 16px;
+            font-weight: 500;
+            letter-spacing: 0em;
+            overflow-x: hidden;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            padding: 2rem 4rem ;
+            /* background: repeating-radial-gradient(circle, var(--container-color), var(--main-bg)); */
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            background-color: rgb(7, 152, 201);
+            border: none;
+            
+        }
+
+        a {
+            text-decoration: none;
+            color: blue;
+        }
+
+        main {
+            overflow: hidden;
+        }
+
+        .plot {
+            width: 100%;
+            height: 80%;
+        }
+
+        .chart__details {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 90%;
+        }
+
+        .chart__details span {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        label {
+            display: block;
+            margin: 0.5rem;
+            font-size: small;
+
+        }
+
+        input, select {
+            padding: 0.5rem 1rem;
+            border: 1px solid rgb(7, 152, 201);
+            cursor: pointer;
+            font-size: small;
+        }
+        .disabled {
+            pointer-events: none;
+            /* Optionally, you can add styles to visually indicate that the button is disabled */
+            opacity: 0.5; /* You can adjust the opacity to make it look disabled */
+            cursor: not-allowed; /* Change the cursor style to indicate it's not clickable */
+        }
+        
+
+    </style>
+</head>
+<body>
+    <h1>Gold (USD) Seasonality Chart</h1>
+    <div class="chart__details">
+            <span>
+                <label for="start_month"> Start Month:</label>
+                <select name="start_month" id="start_month">
+                    <option value="1">January</option>
+                    <option value="2">February</option>
+                    <option value="3">March</option>
+                    <option value="4">April</option>
+                    <option value="5">May</option>
+                    <option value="6">June</option>
+                    <option value="7">July</option>
+                    <option value="8">August</option>
+                    <option value="9">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                </select>
+                
+            </span>
+            <span>
+                <label for="end_month"> End Month:</label>
+                <select name="end_month" id="end_month">
+                    <option value="1">January</option>
+                    <option value="2">February</option>
+                    <option value="3">March</option>
+                    <option value="4">April</option>
+                    <option value="5">May</option>
+                    <option value="6">June</option>
+                    <option value="7">July</option>
+                    <option value="8">August</option>
+                    <option value="9">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                </select>
+                
+            </span>
+            <span>
+                <label for="duration">Duration:</label>
+                <select name="duration" id="duration">
+                    <option value=15>15 Years</option>
+                    <option value=10>10 Years</option>
+                    <option value=5>5 Years</option>
+                </select>
+            </span>
+            <span>
+                <label for="exclusion">Exclusion:</label>
+                <select name="exclusion" id="exclusion">
+                    <option value="none">None</option>
+                    <option value="election">Election Years</option>
+                    <option value="only-election">Only Election Years</option>
+                    <option value="2020">2020</option>
+                </select>
+            </span>
+            <span>
+                <label for="current_year">Current Year:</label>
+                <input type="checkbox" id="current_year">
+            </span>
+            <span>
+                <label for="last_year">Last Year:</label>
+                <input type="checkbox" id="last_year">
+            </span>
+            <button id="submit-btn">Submit</button>
+    </div>
+    <div id="plot" class="plot">{{ plot_div|safe }}</div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        start_month.value = "{{ config_data.start_month }}";
+        end_month.value = "{{ config_data.end_month }}";
+        duration.value = "{{ config_data.duration }}";
+        exclusion.value = "{{ config_data.exclusion }}";
+
+        const current_year_value = "{{ config_data.current_year }}"
+        if (current_year_value  == "True")
+            {
+                current_year.checked = true;
+            } else 
+            {
+                current_year.checked =false;
+            }
+
+        const last_year_value = "{{ config_data.last_year }}"
+        if (last_year_value  == "True")
+            {
+                last_year.checked = true;
+            } else 
+            {
+                last_year.checked =false;
+            }
+    </script>
+
+    <script>
+        const btn = document.getElementById('submit-btn');
+        const start_month = document.getElementById('start_month');
+        const end_month = document.getElementById('end_month');
+        const duration = document.getElementById('duration');
+        const exclusion = document.getElementById('exclusion');
+        const current_year = document.getElementById('current_year');
+        const last_year = document.getElementById('last_year');
+
+        btn.addEventListener("click", function() {
+            var formData = {};
+            formData.start_month = start_month.value;
+            formData.end_month = end_month.value;
+            formData.duration = duration.value;
+            formData.exclusion = exclusion.value;
+            formData.current_year = current_year.checked;
+            formData.last_year = last_year.checked;
+
+            btn.textContent = "Please wait...";
+            btn.classList.add("disabled");
+            
+
+            fetch('/submit_form', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Handle the response from the Flask backend
+                    console.log('Response from Flask:', data);
+                    window.location.reload();
+                    
+                    // You can update the results__container or perform other actions based on the response
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+
+         
+
+        });
+    </script>
+</body>
+</html>

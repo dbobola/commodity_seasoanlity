@@ -1,0 +1,8 @@
+{
+    "start_month": 1,
+    "end_month": 6,
+    "duration": 10,
+    "exclusion": "2020",
+    "current_year": true,
+    "last_year": true
+}
