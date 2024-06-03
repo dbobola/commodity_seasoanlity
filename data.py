@@ -30,32 +30,34 @@ def convert_to_daily_data(input_csv_path, output_csv_path):
     daily_df.to_csv(output_csv_path, index=False)
 
 def convert_to_daily_data_format(api_url, output_csv_path):
-    # Make the API call
     response = requests.get(api_url)
     
-    # Check if the request was successful
     if response.status_code == 200:
-        # Parse the JSON response
         data = response.json()
-        
-        # Extract the values from the response
         values = data.get('values', [])
-        print(values)
-        
-        # Create a DataFrame from the extracted values
         df = pd.DataFrame(values)
-        
-        # Rename columns
         df.rename(columns={'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'datetime': 'Date'}, inplace=True)
         
         # Convert Date column to datetime format
         df['Date'] = pd.to_datetime(df['Date'])
-        
-        # Sort by date in ascending order
         df = df.sort_values(by='Date')
         
-        # Convert date format
+        # Set Date as index for resampling
+        df.set_index('Date', inplace=True)
+        
+        # Resample to fill missing dates and forward fill the values
+        df = df.resample('D').ffill()
+        
+        # Reset index to get Date back as a column
+        df.reset_index(inplace=True)
+        
+    
+        
+        # Convert Date column to the desired string format
         df['Date'] = df['Date'].dt.strftime('%m/%d/%y %H:%M')
+        
+        # Reorder the columns
+        df = df[['Open', 'High', 'Low', 'Close', 'Date']]
         
         # Save to CSV
         df.to_csv(output_csv_path, index=False)
@@ -64,5 +66,18 @@ def convert_to_daily_data_format(api_url, output_csv_path):
     else:
         print("Failed to retrieve data from the API:", response.status_code)
 
-api_url = "https://api.twelvedata.com/time_series?start_date=2024-01-01&symbol=xau/usd&interval=1day&apikey=d8dfab6c3fce444e877032ef320bc4bb"
-convert_to_daily_data_format(api_url,'data/current_data_1d.csv', )
+
+
+
+def get_historical_data():
+    assets = ["XAU/USD", "XAG/USD", "WTI/USD", "GBP/USD", "BTC/USD"]
+    for asset in assets:
+        history_api_url = f"https://api.twelvedata.com/time_series?start_date=2009-01-01&end_date=2023-12-31&symbol={asset}&interval=1day&apikey=d8dfab6c3fce444e877032ef320bc4bb"
+        asset_name = asset.replace("/", "_")
+        history_file = f'data/{asset_name}_history.csv'
+        convert_to_daily_data_format(history_api_url, history_file)
+        current_api_url = f"https://api.twelvedata.com/time_series?start_date=2024-01-01&symbol={asset}&interval=1day&apikey=d8dfab6c3fce444e877032ef320bc4bb"
+        current_file = f'data/{asset_name}_current.csv'
+        convert_to_daily_data_format(current_api_url, current_file )
+
+get_historical_data()

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Gold (USD) Seasonality Chart</title>
+    <title>{{config_data.commodity}} Seasonality Chart</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <link rel="stylesheet" href="index.css">
     <style>
@@ -52,6 +52,27 @@
             width: 90%;
         }
 
+        .data__details {
+            display: flex;
+            align-items: center;
+            margin-top: 2rem;
+            
+        }
+
+        .data__details span {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-right: 2rem;
+        }
+        .data__details button {
+            margin-right: 2rem;
+        }
+
+        .data__details input {
+            width: 40vw;
+        }
+
         .chart__details span {
             display: flex;
             align-items: center;
@@ -82,8 +103,16 @@
     </style>
 </head>
 <body>
-    <h1>Gold (USD) Seasonality Chart</h1>
+    <h1>{{config_data.commodity}} Seasonality Chart</h1>
     <div class="chart__details">
+            <span>
+                <label for="commodity">Commodity:</label>
+                <select name="commodity" id="commodity">
+                    {% for asset in assets %}
+                        <option value={{asset}}>{{asset}}</option>
+                    {% endfor %}
+                </select>
+            </span>
             <span>
                 <label for="start_month"> Start Month:</label>
                 <select name="start_month" id="start_month">
@@ -147,10 +176,21 @@
             </span>
             <button id="submit-btn">Submit</button>
     </div>
+    <div class="data__details">
+        <span>
+            <label for="add-asset">Add new asset:</label>
+            <input  id="add-asset" type="text" placeholder="Enter sysmbol of new asset">
+        </span>
+        
+        <button id="add-asset-btn">Add Asset</button>
+        <button id="update-data-btn">Update Data</button>
+        <p class="asset_error"></p>
+</div>
     <div id="plot" class="plot">{{ plot_div|safe }}</div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
+        commodity.value = "{{ config_data.commodity }}"
         start_month.value = "{{ config_data.start_month }}";
         end_month.value = "{{ config_data.end_month }}";
         duration.value = "{{ config_data.duration }}";
@@ -177,15 +217,88 @@
 
     <script>
         const btn = document.getElementById('submit-btn');
+        const commodity = document.getElementById('commodity');
         const start_month = document.getElementById('start_month');
         const end_month = document.getElementById('end_month');
         const duration = document.getElementById('duration');
         const exclusion = document.getElementById('exclusion');
         const current_year = document.getElementById('current_year');
         const last_year = document.getElementById('last_year');
+        const new_asset = document.getElementById('add-asset');
+        const addDataBtn = document.getElementById('add-asset-btn');
+        const updateDateBtn = document.getElementById('update-data-btn');
+        const errorCon = document.querySelector('.asset_error');
+
+        addDataBtn.addEventListener("click", function() {
+            var formData = {};
+            formData.asset = new_asset.value;
+
+            fetch('/add_asset', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Handle the response from the Flask backend
+                    if (data.status == "success")
+                        {
+                            window.location.reload();
+                        } else if (data.status == "exists")
+                        {
+                            errorCon.textContent = "Asset already exists";
+                            errorCon.style.background= "blue";
+                            errorCon.style.color= "white";
+                            errorCon.style.padding = "1rem"
+                        } else {
+                            errorCon.textContent = "Error adding asset";
+                            errorCon.style.background= "red";
+                            errorCon.style.color= "white";
+                            errorCon.style.padding = "1rem"
+                        }
+                    
+                    
+                    // You can update the results__container or perform other actions based on the response
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    errorCon.textContent = "Error adding asset";
+                    errorCon.style.background= "red";
+                    errorCon.style.color= "white";
+                });
+        
+        });
+
+        updateDateBtn.addEventListener("click", function() {
+
+            fetch('/update_data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Handle the response from the Flask backend
+                    console.log('Response from Flask:', data);
+                    window.location.reload();
+                    
+                    // You can update the results__container or perform other actions based on the response
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    errorCon.textContent = "Error updating data";
+                    errorCon.style.color = "red";
+                });
+        
+        });
 
         btn.addEventListener("click", function() {
             var formData = {};
+            formData.commodity = commodity.value;
             formData.start_month = start_month.value;
             formData.end_month = end_month.value;
             formData.duration = duration.value;

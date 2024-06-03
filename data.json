@@ -1,8 +1,9 @@
 {
+    "commodity": "XAU/USD",
     "start_month": 1,
-    "end_month": 6,
+    "end_month": 10,
     "duration": 10,
-    "exclusion": "2020",
+    "exclusion": "none",
     "current_year": true,
     "last_year": true
 }
